@@ -81,7 +81,11 @@ for row_number, correction_row in correction_table.iterrows():
         description = str(correction_row["description"] or "Manual correction")
         corrections.append(Correction(correction_date, description, amount))
         valid_correction_rows.append(
-            {"Date": correction_date, "Description": description, "Amount": amount}
+            {
+                "Date": correction_date.strftime("%d/%m/%Y"),
+                "Description": description,
+                "Amount": amount,
+            }
         )
     except (TypeError, ValueError):
         st.error(f"Invalid correction on CSV line {row_number + 2}; that row was skipped.")
@@ -116,7 +120,7 @@ balances = results["balance"].astype(float)
 colours = ["#168de2" if value < 0 else "#27a35a" for value in balances]
 positions = list(range(len(results)))
 custom_data = results[["date", "event", "income", "expense", "interest", "change"]].copy()
-custom_data["date"] = custom_data["date"].dt.strftime("%d %b %Y")
+custom_data["date"] = custom_data["date"].dt.strftime("%d/%m/%Y")
 
 fig = go.Figure(
     go.Bar(
@@ -138,7 +142,7 @@ fig = go.Figure(
 )
 label_step = max(1, len(results) // 25)
 tick_positions = positions[::label_step]
-tick_labels = [results.iloc[index]["date"].strftime("%d %b %Y") for index in tick_positions]
+tick_labels = [results.iloc[index]["date"].strftime("%d/%m/%Y") for index in tick_positions]
 fig.update_layout(
     xaxis={"title": "Transaction date", "tickmode": "array", "tickvals": tick_positions, "ticktext": tick_labels},
     yaxis={"title": "Balance ($) — negative means owed", "tickprefix": "$", "tickformat": ",.0f"},
@@ -153,7 +157,7 @@ final_balance = float(results.iloc[-1]["balance"])
 balance_area.metric("Final projected balance", f"${final_balance:,.2f}")
 
 display_results = results.copy()
-display_results["date"] = display_results["date"].dt.strftime("%d %b %Y")
+display_results["date"] = display_results["date"].dt.strftime("%d/%m/%Y")
 csv_data = display_results.to_csv(index=False, float_format="%.2f").encode("utf-8")
 table_results = display_results[
     ["date", "event", "balance", "income", "expense", "interest", "change"]
@@ -180,13 +184,13 @@ table_html = f"""
 <html>
 <head>
 <style>
-  html, body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
-  .table-wrap {{ height: 590px; overflow: auto; border: 1px solid #d9d9d9; border-radius: 6px; }}
+  html, body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; background: #0e1117; color: #fafafa; }}
+  .table-wrap {{ height: 590px; overflow: auto; border: 1px solid #41444c; border-radius: 6px; background: #0e1117; }}
   table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
-  th {{ position: sticky; top: 0; z-index: 2; background: #f0f2f6; text-align: left; }}
-  th, td {{ padding: 8px 10px; border-bottom: 1px solid #e6e6e6; white-space: nowrap; }}
-  tbody tr:nth-child(even) {{ background: #f5f6f7; }}
-  tbody tr:nth-child(odd) {{ background: #ffffff; }}
+  th {{ position: sticky; top: 0; z-index: 2; background: #262a33; color: #fafafa; text-align: left; }}
+  th, td {{ padding: 8px 10px; border-bottom: 1px solid #30333b; white-space: nowrap; }}
+  tbody tr:nth-child(even) {{ background: #171b22; }}
+  tbody tr:nth-child(odd) {{ background: #0e1117; }}
   td:nth-child(n+3), th:nth-child(n+3) {{ text-align: right; }}
   #current-month-row {{ outline: 2px solid #168de2; outline-offset: -2px; }}
 </style>
