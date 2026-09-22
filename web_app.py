@@ -10,6 +10,8 @@ import streamlit as st
 
 from income_expense_graph import Correction, SETTINGS, Settings, project
 
+
+ 
 with st.sidebar:
     st.header("Projection settings")
     start_date = st.date_input("Start date", SETTINGS.start_date)
@@ -43,6 +45,35 @@ with st.sidebar:
         step=0.01,
     )
 
+
+# These placeholders keep the calculated output above the corrections editor,
+# even though Streamlit must read the editor before performing the calculation.
+chart_area = st.empty()
+balance_area = st.empty()
+table_area = st.empty()
+download_area = st.empty()
+
+st.subheader("Corrections")
+st.write("Add one-off adjustments below. Positive amounts add money; negative amounts remove money.")
+
+default_corrections = pd.DataFrame(
+    {
+        "Date": pd.Series(dtype="datetime64[ns]"),
+        "Description": pd.Series(dtype="str"),
+        "Amount": pd.Series(dtype="float"),
+    }
+)
+correction_table = st.data_editor(
+    default_corrections,
+    num_rows="dynamic",
+    hide_index=True,
+    width="stretch",
+    column_config={
+        "Date": st.column_config.DateColumn("Date", required=True),
+        "Description": st.column_config.TextColumn("Description", required=True),
+        "Amount": st.column_config.NumberColumn("Amount ($)", format="$%.2f", required=True),
+    },
+)
 
 
 corrections: list[Correction] = []
@@ -109,15 +140,14 @@ fig.update_layout(
     margin={"l": 30, "r": 20, "t": 60, "b": 100},
 )
 fig.add_hline(y=0, line_color="#333333", line_width=1)
-st.plotly_chart(fig, width="stretch", config={"displaylogo": False, "scrollZoom": True})
+chart_area.plotly_chart(fig, width="stretch", config={"displaylogo": False, "scrollZoom": True})
 
 final_balance = float(results.iloc[-1]["balance"])
-st.metric("Final projected balance", f"${final_balance:,.2f}")
+balance_area.metric("Final projected balance", f"${final_balance:,.2f}")
 
-st.subheader("All transactions")
 display_results = results.copy()
 display_results["date"] = display_results["date"].dt.strftime("%d %b %Y")
-st.dataframe(
+table_area.dataframe(
     display_results,
     hide_index=True,
     width="stretch",
@@ -133,31 +163,9 @@ st.dataframe(
 )
 
 csv_data = display_results.to_csv(index=False, float_format="%.2f").encode("utf-8")
-st.download_button(
+download_area.download_button(
     "Download CSV",
     data=csv_data,
     file_name="income_expense_projection.csv",
     mime="text/csv",
 )
-st.subheader("Corrections")
-st.write("Add one-off adjustments below. Positive amounts add money; negative amounts remove money.")
-
-default_corrections = pd.DataFrame(
-    {
-        "Date": pd.Series(dtype="datetime64[ns]"),
-        "Description": pd.Series(dtype="str"),
-        "Amount": pd.Series(dtype="float"),
-    }
-)
-correction_table = st.data_editor(
-    default_corrections,
-    num_rows="dynamic",
-    hide_index=True,
-    width="stretch",
-    column_config={
-        "Date": st.column_config.DateColumn("Date", required=True),
-        "Description": st.column_config.TextColumn("Description", required=True),
-        "Amount": st.column_config.NumberColumn("Amount ($)", format="$%.2f", required=True),
-    },
-)
-
