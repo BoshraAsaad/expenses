@@ -84,11 +84,14 @@ for row_number, correction_row in correction_table.iterrows():
     except (TypeError, ValueError):
         st.error(f"Invalid correction on CSV line {row_number + 2}; that row was skipped.")
 
+corrections_display = pd.DataFrame(valid_correction_rows)
+if not corrections_display.empty:
+    corrections_display["Amount"] = corrections_display["Amount"].map(lambda value: f"{value:,.0f}")
 st.dataframe(
-    pd.DataFrame(valid_correction_rows),
+    corrections_display,
     hide_index=True,
     width="stretch",
-    column_config={"Amount": st.column_config.NumberColumn("Amount", format="$%.2f")},
+    column_config={"Amount": "Amount"},
 )
 
 settings = Settings(
@@ -149,22 +152,25 @@ balance_area.metric("Final projected balance", f"${final_balance:,.2f}")
 
 display_results = results.copy()
 display_results["date"] = display_results["date"].dt.strftime("%d %b %Y")
+csv_data = display_results.to_csv(index=False, float_format="%.2f").encode("utf-8")
+table_results = display_results.copy()
+for column in ("income", "expense", "interest", "change", "balance"):
+    table_results[column] = table_results[column].map(lambda value: f"{float(value):,.0f}")
 table_area.dataframe(
-    display_results,
+    table_results,
     hide_index=True,
     width="stretch",
     column_config={
         "date": "Date",
         "event": "Event",
-        "income": st.column_config.NumberColumn("Income", format="$%.2f"),
-        "expense": st.column_config.NumberColumn("Expense", format="$%.2f"),
-        "interest": st.column_config.NumberColumn("Interest", format="$%.2f"),
-        "change": st.column_config.NumberColumn("Change", format="$%.2f"),
-        "balance": st.column_config.NumberColumn("Balance", format="$%.2f"),
+        "income": "Income",
+        "expense": "Expense",
+        "interest": "Interest",
+        "change": "Change",
+        "balance": "Balance",
     },
 )
 
-csv_data = display_results.to_csv(index=False, float_format="%.2f").encode("utf-8")
 download_area.download_button(
     "Download CSV",
     data=csv_data,
