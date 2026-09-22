@@ -44,28 +44,6 @@ with st.sidebar:
     )
 
 
-st.subheader("Corrections")
-st.write("Add one-off adjustments below. Positive amounts add money; negative amounts remove money.")
-
-default_corrections = pd.DataFrame(
-    {
-        "Date": pd.Series(dtype="datetime64[ns]"),
-        "Description": pd.Series(dtype="str"),
-        "Amount": pd.Series(dtype="float"),
-    }
-)
-correction_table = st.data_editor(
-    default_corrections,
-    num_rows="dynamic",
-    hide_index=True,
-    width="stretch",
-    column_config={
-        "Date": st.column_config.DateColumn("Date", required=True),
-        "Description": st.column_config.TextColumn("Description", required=True),
-        "Amount": st.column_config.NumberColumn("Amount ($)", format="$%.2f", required=True),
-    },
-)
-
 
 corrections: list[Correction] = []
 for _, correction_row in correction_table.dropna(how="all").iterrows():
@@ -124,7 +102,6 @@ label_step = max(1, len(results) // 25)
 tick_positions = positions[::label_step]
 tick_labels = [results.iloc[index]["date"].strftime("%d %b %Y") for index in tick_positions]
 fig.update_layout(
-    title="Balance After Every Pay, Expense, Interest and Correction",
     xaxis={"title": "Transaction date", "tickmode": "array", "tickvals": tick_positions, "ticktext": tick_labels},
     yaxis={"title": "Balance ($) — negative means owed", "tickprefix": "$", "tickformat": ",.0f"},
     hovermode="closest",
@@ -162,3 +139,25 @@ st.download_button(
     file_name="income_expense_projection.csv",
     mime="text/csv",
 )
+st.subheader("Corrections")
+st.write("Add one-off adjustments below. Positive amounts add money; negative amounts remove money.")
+
+default_corrections = pd.DataFrame(
+    {
+        "Date": pd.Series(dtype="datetime64[ns]"),
+        "Description": pd.Series(dtype="str"),
+        "Amount": pd.Series(dtype="float"),
+    }
+)
+correction_table = st.data_editor(
+    default_corrections,
+    num_rows="dynamic",
+    hide_index=True,
+    width="stretch",
+    column_config={
+        "Date": st.column_config.DateColumn("Date", required=True),
+        "Description": st.column_config.TextColumn("Description", required=True),
+        "Amount": st.column_config.NumberColumn("Amount ($)", format="$%.2f", required=True),
+    },
+)
+
