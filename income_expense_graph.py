@@ -130,6 +130,14 @@ def project(
             )
             correction_index += 1
 
+        expense_date = date(month_start.year, month_start.month, 28)
+        if expense_date >= settings.start_date:
+            expense_year = full_years_since(settings.start_date, expense_date)
+            expenses = settings.monthly_expenses * (
+                1 + settings.expenses_yearly_increase
+            ) ** expense_year
+            transactions.append((expense_date, 2, "Monthly expenses", -expenses))
+
         for transaction_date, _order, event, amount in sorted(transactions):
             balance += amount
             rows.append(
@@ -143,24 +151,6 @@ def project(
                     "balance": balance,
                 }
             )
-
-        expense_year = full_years_since(settings.start_date, month_end)
-        expenses = settings.monthly_expenses * (
-            1 + settings.expenses_yearly_increase
-        ) ** expense_year
-
-        balance -= expenses
-        rows.append(
-            {
-                "date": month_end.isoformat(),
-                "event": "Monthly expenses",
-                "income": 0.0,
-                "expense": expenses,
-                "interest": 0.0,
-                "change": -expenses,
-                "balance": balance,
-            }
-        )
 
         # Interest is charged only while the balance is below zero (money owed).
         interest = (-balance) * settings.annual_interest / 12 if balance < 0 else 0.0
