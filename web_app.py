@@ -53,6 +53,7 @@ with st.sidebar:
 # even though Streamlit must read the editor before performing the calculation.
 chart_area = st.empty()
 balance_area = st.empty()
+table_control_area = st.empty()
 table_area = st.empty()
 download_area = st.empty()
 
@@ -156,6 +157,21 @@ csv_data = display_results.to_csv(index=False, float_format="%.2f").encode("utf-
 table_results = display_results.copy()
 for column in ("income", "expense", "interest", "change", "balance"):
     table_results[column] = table_results[column].map(lambda value: f"{float(value):,.0f}")
+
+current_month = pd.Timestamp.today().to_period("M")
+result_months = results["date"].dt.to_period("M")
+current_month_rows = result_months == current_month
+show_earlier = False
+if current_month_rows.any():
+    show_earlier = table_control_area.checkbox(
+        "Show transactions before this month",
+        value=False,
+        help="The table starts at the current month by default.",
+    )
+    if not show_earlier:
+        first_current_row = current_month_rows[current_month_rows].index[0]
+        table_results = table_results.loc[first_current_row:]
+
 table_area.dataframe(
     table_results,
     hide_index=True,
