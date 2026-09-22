@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from datetime import date
 
-import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
-from matplotlib.ticker import StrMethodFormatter
 
 from income_expense_graph import Correction, SETTINGS, Settings, project
 
@@ -105,22 +104,41 @@ results["date"] = pd.to_datetime(results["date"])
 
 balances = results["balance"].astype(float)
 colours = ["#168de2" if value < 0 else "#27a35a" for value in balances]
-fig, ax = plt.subplots(figsize=(15, 6.5))
-ax.bar(range(len(results)), balances, color=colours, width=0.82)
-ax.axhline(0, color="#333333", linewidth=0.9)
-ax.set_title("Balance After Every Pay, Expense, Interest and Correction")
-ax.set_ylabel("Balance ($) — negative means owed")
-ax.yaxis.set_major_formatter(StrMethodFormatter("${x:,.0f}"))
+positions = list(range(len(results)))
+custom_data = results[["date", "event", "income", "expense", "interest", "change"]].copy()
+custom_data["date"] = custom_data["date"].dt.strftime("%d %b %Y")
+
+fig = go.Figure(
+    go.Bar(
+        x=positions,
+        y=balances,
+        marker_color=colours,
+        customdata=custom_data.to_numpy(),
+        hovertemplate=(
+            "<b>%{customdata[1]}</b><br>"
+            "Date: %{customdata[0]}<br>"
+            "Income: $%{customdata[2]:,.2f}<br>"
+            "Expense: $%{customdata[3]:,.2f}<br>"
+            "Interest: $%{customdata[4]:,.2f}<br>"
+            "Change: $%{customdata[5]:,.2f}<br>"
+            "<b>Balance: $%{y:,.2f}</b>"
+            "<extra></extra>"
+        ),
+    )
+)
 label_step = max(1, len(results) // 25)
-ticks = list(range(0, len(results), label_step))
-labels = [
-    f"{row.date:%d %b %Y}\n{row.event}" for row in results.itertuples(index=False)
-]
-ax.set_xticks(ticks, [labels[index] for index in ticks], rotation=55, ha="right")
-ax.grid(axis="y", alpha=0.25)
-fig.tight_layout()
-st.pyplot(fig)
-plt.close(fig)
+tick_positions = positions[::label_step]
+tick_labels = [results.iloc[index]["date"].strftime("%d %b %Y") for index in tick_positions]
+fig.update_layout(
+    title="Balance After Every Pay, Expense, Interest and Correction",
+    xaxis={"title": "Transaction date", "tickmode": "array", "tickvals": tick_positions, "ticktext": tick_labels},
+    yaxis={"title": "Balance ($) — negative means owed", "tickprefix": "$", "tickformat": ",.0f"},
+    hovermode="closest",
+    height=650,
+    margin={"l": 30, "r": 20, "t": 60, "b": 100},
+)
+fig.add_hline(y=0, line_color="#333333", line_width=1)
+st.plotly_chart(fig, width="stretch", config={"displaylogo": False, "scrollZoom": True})
 
 final_balance = float(results.iloc[-1]["balance"])
 st.metric("Final projected balance", f"${final_balance:,.2f}")
