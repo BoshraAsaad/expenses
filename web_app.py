@@ -11,7 +11,9 @@ import streamlit as st
 from income_expense_graph import Correction, SETTINGS, Settings, project
 
 
- 
+st.set_page_config(layout="wide")
+
+
 with st.sidebar:
     st.header("Projection settings")
     start_date = st.date_input("Start date", SETTINGS.start_date)
