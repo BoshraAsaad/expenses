@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from pathlib import Path
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -12,6 +12,7 @@ from income_expense_graph import Correction, SETTINGS, Settings, project
 
 
 st.set_page_config(layout="wide")
+CORRECTIONS_FILE = Path(__file__).with_name("corrections.csv")
 
 
 with st.sidebar:
@@ -56,40 +57,39 @@ table_area = st.empty()
 download_area = st.empty()
 
 st.subheader("Corrections")
-st.write("Add one-off adjustments below. Positive amounts add money; negative amounts remove money.")
+st.caption("Loaded from corrections.csv in the GitHub repository.")
 
-default_corrections = pd.DataFrame(
-    {
-        "Date": pd.Series(dtype="datetime64[ns]"),
-        "Description": pd.Series(dtype="str"),
-        "Amount": pd.Series(dtype="float"),
-    }
-)
-correction_table = st.data_editor(
-    default_corrections,
-    num_rows="dynamic",
-    hide_index=True,
-    width="stretch",
-    column_config={
-        "Date": st.column_config.DateColumn("Date", required=True),
-        "Description": st.column_config.TextColumn("Description", required=True),
-        "Amount": st.column_config.NumberColumn("Amount ($)", format="$%.2f", required=True),
-    },
-)
+if CORRECTIONS_FILE.exists():
+    correction_table = pd.read_csv(CORRECTIONS_FILE)
+else:
+    correction_table = pd.DataFrame(columns=["date", "description", "amount"])
+    st.warning("corrections.csv was not found, so no corrections were applied.")
 
+required_columns = {"date", "description", "amount"}
+if not required_columns.issubset(correction_table.columns):
+    st.error("corrections.csv must contain these columns: date, description, amount")
+    correction_table = pd.DataFrame(columns=["date", "description", "amount"])
 
 corrections: list[Correction] = []
-for _, correction_row in correction_table.dropna(how="all").iterrows():
-    if pd.isna(correction_row["Date"]) or pd.isna(correction_row["Amount"]):
-        continue
-    correction_date = pd.Timestamp(correction_row["Date"]).date()
-    corrections.append(
-        Correction(
-            date=correction_date,
-            description=str(correction_row["Description"] or "Manual correction"),
-            amount=float(correction_row["Amount"]),
+valid_correction_rows: list[dict[str, object]] = []
+for row_number, correction_row in correction_table.iterrows():
+    try:
+        correction_date = pd.to_datetime(correction_row["date"], errors="raise").date()
+        amount = float(correction_row["amount"])
+        description = str(correction_row["description"] or "Manual correction")
+        corrections.append(Correction(correction_date, description, amount))
+        valid_correction_rows.append(
+            {"Date": correction_date, "Description": description, "Amount": amount}
         )
-    )
+    except (TypeError, ValueError):
+        st.error(f"Invalid correction on CSV line {row_number + 2}; that row was skipped.")
+
+st.dataframe(
+    pd.DataFrame(valid_correction_rows),
+    hide_index=True,
+    width="stretch",
+    column_config={"Amount": st.column_config.NumberColumn("Amount", format="$%.2f")},
+)
 
 settings = Settings(
     start_date=start_date,
