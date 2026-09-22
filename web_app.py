@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import html
 from pathlib import Path
 
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 from income_expense_graph import Correction, SETTINGS, Settings, project
 
@@ -53,7 +55,6 @@ with st.sidebar:
 # even though Streamlit must read the editor before performing the calculation.
 chart_area = st.empty()
 balance_area = st.empty()
-table_control_area = st.empty()
 table_area = st.empty()
 download_area = st.empty()
 
@@ -163,39 +164,46 @@ for column in ("income", "expense", "interest", "change", "balance"):
 current_month = pd.Timestamp.today().to_period("M")
 result_months = results["date"].dt.to_period("M")
 current_month_rows = result_months == current_month
-show_earlier = False
-if current_month_rows.any():
-    show_earlier = table_control_area.checkbox(
-        "Show transactions before this month",
-        value=False,
-        help="The table starts at the current month by default.",
-    )
-    if not show_earlier:
-        first_current_row = current_month_rows[current_month_rows].index[0]
-        table_results = table_results.loc[first_current_row:]
-
 table_results = table_results.reset_index(drop=True)
-striped_table = table_results.style.apply(
-    lambda row: [
-        "background-color: rgba(128, 128, 128, 0.12)" if row.name % 2 else ""
-    ]
-    * len(row),
-    axis=1,
-)
-table_area.dataframe(
-    striped_table,
-    hide_index=True,
-    width="stretch",
-    column_config={
-        "date": "Date",
-        "event": "Event",
-        "income": "Income",
-        "expense": "Expense",
-        "interest": "Interest",
-        "change": "Change",
-        "balance": "Balance",
-    },
-)
+current_row_number = int(current_month_rows.to_numpy().argmax()) if current_month_rows.any() else -1
+
+headings = ["Date", "Event", "Balance", "Income", "Expense", "Interest", "Change"]
+header_html = "".join(f"<th>{heading}</th>" for heading in headings)
+body_rows: list[str] = []
+for row_number, row in table_results.iterrows():
+    row_id = ' id="current-month-row"' if row_number == current_row_number else ""
+    cells = "".join(f"<td>{html.escape(str(value))}</td>" for value in row)
+    body_rows.append(f"<tr{row_id}>{cells}</tr>")
+
+table_html = f"""
+<!doctype html>
+<html>
+<head>
+<style>
+  html, body {{ margin: 0; padding: 0; font-family: Arial, sans-serif; }}
+  .table-wrap {{ height: 590px; overflow: auto; border: 1px solid #d9d9d9; border-radius: 6px; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
+  th {{ position: sticky; top: 0; z-index: 2; background: #f0f2f6; text-align: left; }}
+  th, td {{ padding: 8px 10px; border-bottom: 1px solid #e6e6e6; white-space: nowrap; }}
+  tbody tr:nth-child(even) {{ background: #f5f6f7; }}
+  tbody tr:nth-child(odd) {{ background: #ffffff; }}
+  td:nth-child(n+3), th:nth-child(n+3) {{ text-align: right; }}
+  #current-month-row {{ outline: 2px solid #168de2; outline-offset: -2px; }}
+</style>
+</head>
+<body>
+  <div class="table-wrap">
+    <table><thead><tr>{header_html}</tr></thead><tbody>{''.join(body_rows)}</tbody></table>
+  </div>
+<script>
+  const currentRow = document.getElementById("current-month-row");
+  if (currentRow) currentRow.scrollIntoView({{block: "start"}});
+</script>
+</body>
+</html>
+"""
+with table_area.container():
+    components.html(table_html, height=610, scrolling=False)
 
 download_area.download_button(
     "Download CSV",
