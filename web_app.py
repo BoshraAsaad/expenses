@@ -191,8 +191,21 @@ table_html = f"""
   th, td {{ padding: 8px 10px; border-bottom: 1px solid #30333b; white-space: nowrap; }}
   tbody tr:nth-child(even) {{ background: #171b22; }}
   tbody tr:nth-child(odd) {{ background: #0e1117; }}
+  th:nth-child(2), td:nth-child(2) {{
+    width: 130px;
+    min-width: 110px;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }}
   td:nth-child(n+3), th:nth-child(n+3) {{ text-align: right; }}
   #current-month-row {{ outline: 2px solid #168de2; outline-offset: -2px; }}
+  @media (max-width: 600px) {{
+    table {{ font-size: 12px; }}
+    th, td {{ padding: 6px 7px; }}
+    th:nth-child(2), td:nth-child(2) {{ width: 95px; min-width: 85px; max-width: 105px; }}
+  }}
 </style>
 </head>
 <body>
