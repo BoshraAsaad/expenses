@@ -154,7 +154,9 @@ balance_area.metric("Final projected balance", f"${final_balance:,.2f}")
 display_results = results.copy()
 display_results["date"] = display_results["date"].dt.strftime("%d %b %Y")
 csv_data = display_results.to_csv(index=False, float_format="%.2f").encode("utf-8")
-table_results = display_results.copy()
+table_results = display_results[
+    ["date", "event", "balance", "income", "expense", "interest", "change"]
+].copy()
 for column in ("income", "expense", "interest", "change", "balance"):
     table_results[column] = table_results[column].map(lambda value: f"{float(value):,.0f}")
 
