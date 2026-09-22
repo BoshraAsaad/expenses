@@ -172,8 +172,16 @@ if current_month_rows.any():
         first_current_row = current_month_rows[current_month_rows].index[0]
         table_results = table_results.loc[first_current_row:]
 
+table_results = table_results.reset_index(drop=True)
+striped_table = table_results.style.apply(
+    lambda row: [
+        "background-color: rgba(128, 128, 128, 0.12)" if row.name % 2 else ""
+    ]
+    * len(row),
+    axis=1,
+)
 table_area.dataframe(
-    table_results,
+    striped_table,
     hide_index=True,
     width="stretch",
     column_config={
