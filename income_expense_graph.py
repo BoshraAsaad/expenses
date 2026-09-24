@@ -44,7 +44,7 @@ SETTINGS = Settings(
     start_date=date(2026, 4, 1),
     years=5,
     opening_balance=-203_000,
-    fortnightly_salary=4_018,
+    fortnightly_salary=4_028,
     first_pay_date=date(2026, 4, 23),
     salary_yearly_increase=3 / 100,
     monthly_expenses=3_550,
@@ -55,7 +55,7 @@ SETTINGS = Settings(
 # Add as many one-off corrections as needed. A positive amount adds money and a
 # negative amount removes money. Remove the leading # to activate an example.
 CORRECTIONS: list[Correction] = [
-    Correction(date(2026, 4, 15), "Opening balance correction", -4_350),
+    # Correction(date(2026, 4, 15), "Opening balance correction", -4_350),
     # Correction(date(2027, 8, 10), "Unexpected repair", -2_500),
 ]
 
