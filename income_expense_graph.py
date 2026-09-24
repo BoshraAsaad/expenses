@@ -43,7 +43,7 @@ class Correction:
 SETTINGS = Settings(
     start_date=date(2026, 4, 1),
     years=5,
-    opening_balance=-203_000,
+    opening_balance=-203_250,
     fortnightly_salary=4_028,
     first_pay_date=date(2026, 4, 23),
     salary_yearly_increase=3 / 100,
